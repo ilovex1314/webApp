@@ -397,13 +397,15 @@
 				Dom.nigth_switch.show();
 			}
 
+			var readerModel;
+
 			Dom.container_font.css('font-size', initSize);
 			$('body').css('background', bkColor);
 			Dom.color_change.removeClass('cur');
 			Dom.color_change.eq(colorIndex).addClass('cur');
 
 			function main(){
-				var readerModel = ReaderModel();
+				readerModel = ReaderModel();
 				readerModel.init();
 				EventHanlder();
 			}
@@ -411,17 +413,28 @@
 			function ReaderModel(){
 
 				var Chapter_id;
+				var Chapter_totle;
 				var init = function(){
-					getFictionInfo(function(){
+					if(Util.StorageGetter('Chapter_id') != null){
+						Chapter_id = parseInt(Util.StorageGetter('Chapter_id'), 10);
+						Chapter_totle = 4;
 						getChapterContent(Chapter_id, function(data){
 							ReaderBaseFrame(Dom.container_font)(data);
 						})
-					})
+					}else{
+						getFictionInfo(function(){
+							getChapterContent(Chapter_id, function(data){
+								ReaderBaseFrame(Dom.container_font)(data);
+							})
+						})
+					}
 				}
+					
 				//获取章节id
 				var getFictionInfo = function(callback){
 					$.get('data/chapter.json', function(data){
 						Chapter_id = data.chapters[1].chapter_id;
+						Chapter_totle = 4;
 						callback && callback();
 					}, 'json');
 				}
@@ -436,8 +449,26 @@
 						}
 					}, 'json');
 				}
+				var prevChapter = function(callback){
+					if(Chapter_id === 1){
+						return;
+					}
+					Chapter_id -= 1;
+					getChapterContent(Chapter_id, callback);
+					Util.StorageSetter('Chapter_id', Chapter_id);
+				}
+				var nextChapter = function(callback){
+					if(Chapter_id === Chapter_totle){
+						return;
+					}
+					Chapter_id += 1;
+					getChapterContent(Chapter_id, callback);
+					Util.StorageSetter('Chapter_id', Chapter_id);
+				}
 				return {
-					init : init
+					init : init,
+					prevChapter : prevChapter,
+					nextChapter : nextChapter
 				}
 			}
 
@@ -530,6 +561,16 @@
 					Util.StorageSetter('bodyBk', color[index-1]);
 					Util.StorageSetter('colorIndex', index-1);
 				});
+				$('#prev_button').click(function(){
+					readerModel.prevChapter(function(data){
+						ReaderBaseFrame(Dom.container_font)(data);
+					})
+				});
+				$('#next_button').click(function(){
+					readerModel.nextChapter(function(data){
+						ReaderBaseFrame(Dom.container_font)(data);
+					})
+				})
 			}
 
 
